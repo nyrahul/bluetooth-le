@@ -1,5 +1,8 @@
 #!/bin/bash
 
+clang-format-6.0 -i scantest.c
+clang-format-6.0 -i advtest.c
+
 gcc scantest.c -lbluetooth -lncurses -o test_scan
 gcc advtest.c -lbluetooth -o test_advertise
 
