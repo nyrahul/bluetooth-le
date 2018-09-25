@@ -1,7 +1,8 @@
 #include <stdlib.h>
 #include <errno.h>
-#include <curses.h>
+//#include <curses.h>
 #include <unistd.h>
+#include <signal.h>
 #include <ctype.h>
 #include <sys/ioctl.h>
 
@@ -15,6 +16,8 @@
 #define EIR_NAME_SHORT              0x08
 #define EIR_NAME_COMPLETE           0x09
 #define EIR_MANUFACTURE_SPECIFIC    0xFF
+
+int device_handle;
 
 unsigned int *uuid_str_to_data(char *uuid)
 {
@@ -38,33 +41,39 @@ unsigned int twoc(int in, int t)
     return (in < 0) ? (in + (2 << (t-1))) : in;
 }
 
-void main(int argc, char **argv)
+int adv_enable(int enable)
 {
-    if(argc != 6)
-    {
-        fprintf(stderr, "Usage: %s <advertisement time in ms> <UUID> <major number> <minor number> <RSSI calibration amount>\n", argv[0]);
-        exit(1);
-    }
+    uint8_t status;
+    struct hci_request rq;
+    le_set_advertise_enable_cp advertise_cp;
 
-    int device_id = hci_get_route(NULL);
+    memset(&advertise_cp, 0, sizeof(advertise_cp));
+    advertise_cp.enable = enable;
 
-    int device_handle = 0;
-    if((device_handle = hci_open_dev(device_id)) < 0)
-    {
-        perror("Could not open device");
-        exit(1);
-    }
+    memset(&rq, 0, sizeof(rq));
+    rq.ogf = OGF_LE_CTL;
+    rq.ocf = OCF_LE_SET_ADVERTISE_ENABLE;
+    rq.cparam = &advertise_cp;
+    rq.clen = LE_SET_ADVERTISE_ENABLE_CP_SIZE;
+    rq.rparam = &status;
+    rq.rlen = 1;
 
+    return hci_send_req(device_handle, &rq, 1000);
+}
+
+int adv_params_cp(int interval)
+{
+    uint8_t status;
+    struct hci_request rq;
     le_set_advertising_parameters_cp adv_params_cp;
+
     memset(&adv_params_cp, 0, sizeof(adv_params_cp));
-    adv_params_cp.min_interval = htobs(atoi(argv[1]));
-    adv_params_cp.max_interval = htobs(atoi(argv[1]));
+    adv_params_cp.min_interval = htobs(interval);
+    adv_params_cp.max_interval = htobs(interval);
     //if (opt)
     //  adv_params_cp.advtype = atoi(opt);
     adv_params_cp.chan_map = 7; //RJ: Advertise on all 3 channels, 37,38,39
 
-    uint8_t status;
-    struct hci_request rq;
     memset(&rq, 0, sizeof(rq));
     rq.ogf = OGF_LE_CTL;
     rq.ocf = OCF_LE_SET_ADVERTISING_PARAMETERS;
@@ -73,7 +82,44 @@ void main(int argc, char **argv)
     rq.rparam = &status;
     rq.rlen = 1;
 
-    int ret = hci_send_req(device_handle, &rq, 1000);
+    return hci_send_req(device_handle, &rq, 1000);
+}
+
+int get_device_handle(void)
+{
+    int device_id = hci_get_route(NULL);
+
+    if((device_handle = hci_open_dev(device_id)) < 0)
+    {
+        perror("Could not open device");
+        exit(1);
+    }
+    return device_handle;
+}
+
+void cleanup(int sig)
+{
+    adv_enable(0);
+    printf("bye.\n");
+    exit(0);
+}
+
+void main(int argc, char **argv)
+{
+    int ret;
+    uint8_t status;
+    struct hci_request rq;
+
+    if(argc != 6)
+    {
+        fprintf(stderr, "Usage: %s <advertisement time in ms> <UUID> <major number> <minor number> <RSSI calibration amount>\n", argv[0]);
+        exit(1);
+    }
+
+    get_device_handle();
+    signal(SIGINT, cleanup);
+
+    ret = adv_params_cp(atoi(argv[1]));
     if (ret < 0)
         goto done;
 
@@ -137,30 +183,22 @@ void main(int argc, char **argv)
     if (ret < 0)
         goto done;
 
-    le_set_advertise_enable_cp advertise_cp;
-    memset(&advertise_cp, 0, sizeof(advertise_cp));
-    advertise_cp.enable = 0x01;
+    ret = adv_enable(1);
 
-    memset(&rq, 0, sizeof(rq));
-    rq.ogf = OGF_LE_CTL;
-    rq.ocf = OCF_LE_SET_ADVERTISE_ENABLE;
-    rq.cparam = &advertise_cp;
-    rq.clen = LE_SET_ADVERTISE_ENABLE_CP_SIZE;
-    rq.rparam = &status;
-    rq.rlen = 1;
-
-    ret = hci_send_req(device_handle, &rq, 1000);
+    printf("Press Ctrl-c to stop advertising...\n");
+    pause();
 
 done:
+    adv_enable(0);
     hci_close_dev(device_handle);
 
     if (ret < 0) {
-        fprintf(stderr, "Can't set advertise mode on hci%d: %s (%d)\n", device_id, strerror(errno), errno);
+        fprintf(stderr, "Can't set advertise mode on hci: %s (%d)\n", strerror(errno), errno);
         exit(1);
     }
 
     if (status) {
-        fprintf(stderr, "LE set advertise enable on hci%d returned status %d\n", device_id, status);
+        fprintf(stderr, "LE set advertise enable on hci returned status %d\n", status);
         exit(1);
     }
 }
