@@ -8,6 +8,8 @@
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>
 
+#include "isync.h"
+
 #define ERROR(...)                                                             \
     printf(__VA_ARGS__);                                                       \
     fflush(stdout);
@@ -167,8 +169,58 @@ void error_check_and_exit(struct hci_state current_hci_state)
     }
 }
 
+void print_hex(const char *str, uint8_t *data, size_t data_len)
+{
+    int i;
+
+    INFO("%s (len=%zu): ", str, data_len);
+    for (i = 0; i < data_len; i++)
+    {
+        INFO("%02X", data[i]);
+    }
+    INFO("\n");
+}
+
+int isync_handle_devauth(uint8_t *data, size_t data_len)
+{
+    hdr_dev_auth_t *devauth = (hdr_dev_auth_t *)data;
+    if (data_len < sizeof(hdr_dev_auth_t))
+    {
+        ERROR("devauth data not enough");
+        return FAILURE;
+    }
+    INFO("DEVAUTH RID=%x\n", devauth->rid);
+    return sizeof(hdr_dev_auth_t);
+}
+
+int isync_handle_adv(uint8_t *data, size_t data_len)
+{
+    int ret      = 0;
+    int offset   = 0;
+    uint8_t type = 0;
+
+    GETB(&type, &data[offset], 1, offset);
+
+    switch (type)
+    {
+        case ISYNC_ADV_TYPE_DEV_AUTH:
+            ret = isync_handle_devauth(data + offset, data_len - offset);
+            break;
+        default:
+            ERROR("Unknown isync beacon type\n");
+            return FAILURE;
+    }
+    if (ret <= 0)
+    {
+        ERROR("Failure parsing devauth\n");
+        return FAILURE;
+    }
+    return SUCCESS;
+}
+
 void process_data(uint8_t *data, size_t data_len, le_advertising_info *info)
 {
+    int i;
     INFO("Test: %p and %zu\n", data, data_len);
     if (data[0] == EIR_NAME_SHORT || data[0] == EIR_NAME_COMPLETE)
     {
@@ -187,7 +239,6 @@ void process_data(uint8_t *data, size_t data_len, le_advertising_info *info)
     else if (data[0] == EIR_FLAGS)
     {
         INFO("Flag type: len=%zu\n", data_len);
-        int i;
         for (i = 1; i < data_len; i++)
         {
             INFO("\tFlag data: 0x%0X\n", data[i]);
@@ -195,17 +246,35 @@ void process_data(uint8_t *data, size_t data_len, le_advertising_info *info)
     }
     else if (data[0] == EIR_MANUFACTURE_SPECIFIC)
     {
-        INFO("Manufacture specific type: len=%zu\n", data_len);
+        uint16_t company_id;
 
-        // TODO int company_id = data[current_index + 2]
-#if 0
+        i = 1;
+        GETB(&company_id, &data[i], 2, i);
 
-        int i;
-        for(i=1; i<data_len; i++)
+        INFO("Manufacture specific type: len=%zu Manufacture:%04X\n", data_len,
+            company_id);
+
+        if (COMPANY_ID_HUAWEI == company_id)
         {
-            INFO("\tData: 0x%0X\n", data[i]);
+            uint8_t type;
+
+            GETB(&type, &data[i], 1, i);
+            INFO("type:%02X\n", type);
+
+            print_hex("DATA", data + i, data_len - i);
+
+            if (TYPE_ISYNC == type)
+            {
+                uint8_t version;
+                GETB(&version, &data[i], 1, i);
+                INFO("Version=%d\n", version);
+                isync_handle_adv(data + i, data_len - i);
+            }
         }
-#endif
+        else
+        {
+            print_hex("DATA", data + i, data_len - i);
+        }
     }
     else
     {
@@ -321,7 +390,9 @@ void main(void)
             {
                 continue;
             }
+            INFO("Rcvd LE_ADVERTISING_REPORT\n");
 
+            // RJ: Specs 7.7.65.2 LE Advertising Report Event
             le_advertising_info *info = (le_advertising_info *)(meta->data + 1);
 
             INFO("Event: %d\n", info->evt_type);
