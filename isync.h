@@ -9,6 +9,8 @@
 
 #define ISYNC_ADV_TYPE_DEV_AUTH  0x01
 
+#define ISYNC_VERSION   0x01
+
 typedef struct _isync_devau_
 {
     uint32_t rid;   //Random id in network byte order
@@ -24,4 +26,14 @@ typedef struct _isync_dev_
 #define GETB(DST, SRC, NUM, OFFSET) \
     memcpy(DST, SRC, NUM);\
     (OFFSET) += (NUM);
+
+#define ERROR(...)                                                             \
+    printf(__VA_ARGS__);                                                       \
+    fflush(stdout);
+#define INFO(...)                                                              \
+    printf(__VA_ARGS__);                                                       \
+    fflush(stdout);
+
+#define TRUE 1
+#define FALSE 0
 

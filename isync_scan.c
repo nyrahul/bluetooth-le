@@ -10,16 +10,6 @@
 
 #include "isync.h"
 
-#define ERROR(...)                                                             \
-    printf(__VA_ARGS__);                                                       \
-    fflush(stdout);
-#define INFO(...)                                                              \
-    printf(__VA_ARGS__);                                                       \
-    fflush(stdout);
-
-#define TRUE 1
-#define FALSE 0
-
 #define HCI_STATE_NONE 0
 #define HCI_STATE_OPEN 2
 #define HCI_STATE_SCANNING 3
