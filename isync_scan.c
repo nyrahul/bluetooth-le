@@ -9,6 +9,7 @@
 #include <bluetooth/hci_lib.h>
 
 #include "isync.h"
+#include "ble_transport.h"
 
 #define HCI_STATE_NONE 0
 #define HCI_STATE_OPEN 2
@@ -183,7 +184,7 @@ int isync_handle_devauth(uint8_t *data, size_t data_len)
     return sizeof(hdr_dev_auth_t);
 }
 
-int isync_handle_adv(uint8_t *data, size_t data_len)
+int isync_handle_adv(le_advertising_info *info, uint8_t *data, size_t data_len)
 {
     int ret      = 0;
     int offset   = 0;
@@ -205,26 +206,27 @@ int isync_handle_adv(uint8_t *data, size_t data_len)
         ERROR("Failure parsing devauth\n");
         return FAILURE;
     }
+    ret = ble_transport_start_cli(&info->bdaddr);
+    INFO("ble_transport_start_cli ret=%d\n", ret);
     return SUCCESS;
 }
 
+#define MAX_NAME_LEN 256
 void process_data(uint8_t *data, size_t data_len, le_advertising_info *info)
 {
     int i;
-    INFO("Test: %p and %zu\n", data, data_len);
+
+    // INFO("Test: %p and %zu\n", data, data_len);
     if (data[0] == EIR_NAME_SHORT || data[0] == EIR_NAME_COMPLETE)
     {
-        size_t name_len = data_len - 1;
-        char *name      = malloc(name_len + 1);
-        memset(name, 0, name_len + 1);
-        memcpy(name, &data[2], name_len);
+        char name[MAX_NAME_LEN] = {0};
+        size_t name_len         = data_len - 1;
+        memcpy(name, &data[1], name_len);
 
         char addr[18];
         ba2str(&info->bdaddr, addr);
 
         INFO("addr=%s name=%s\n", addr, name);
-
-        free(name);
     }
     else if (data[0] == EIR_FLAGS)
     {
@@ -257,8 +259,7 @@ void process_data(uint8_t *data, size_t data_len, le_advertising_info *info)
             {
                 uint8_t version;
                 GETB(&version, &data[i], 1, i);
-                INFO("Version=%d\n", version);
-                isync_handle_adv(data + i, data_len - i);
+                isync_handle_adv(info, data + i, data_len - i);
             }
         }
         else
@@ -387,12 +388,12 @@ int isync_scan(void)
                 continue;
             }
 
-            int current_index = 0;
-            int data_error    = 0;
+            int offset     = 0;
+            int data_error = 0;
 
-            while (!data_error && current_index < info->length)
+            while (!data_error && offset < info->length)
             {
-                size_t data_len = info->data[current_index];
+                size_t data_len = info->data[offset];
 
                 if (data_len + 1 > info->length)
                 {
@@ -403,10 +404,9 @@ int isync_scan(void)
                 }
                 else
                 {
-                    process_data(
-                        info->data + current_index + 1, data_len, info);
+                    process_data(info->data + offset + 1, data_len, info);
                     // get_rssi(&info->bdaddr, current_hci_state);
-                    current_index += data_len + 1;
+                    offset += data_len + 1;
                 }
             }
         }

@@ -99,6 +99,35 @@ ret_fail:
     return NULL;
 }
 
+int ble_transport_start_cli(bdaddr_t *bda)
+{
+    struct sockaddr_l2 addr = {0};
+    int s                   = -1, status;
+    int ret                 = FAILURE;
+
+    // allocate a socket
+    s = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
+    ret_chk(s < 0, "socket failed");
+
+    // set the connection parameters (who to connect to)
+    addr.l2_family = AF_BLUETOOTH;
+    addr.l2_psm    = htobs(ISYNC_L2CAP_PSM);
+    addr.l2_bdaddr = *bda;
+
+    // connect to server
+    status = connect(s, (struct sockaddr *)&addr, sizeof(addr));
+    ret_chk(status, "connect failed");
+
+    status = write(s, "hello!", 6);
+    ret_chk(status <= 0, "write failed");
+
+    ret = SUCCESS;
+
+ret_fail:
+    CLOSE(s);
+    return ret;
+}
+
 int l2cap_start_server(uint16_t psm)
 {
     struct sockaddr_l2 loc_addr = {0};
