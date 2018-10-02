@@ -116,7 +116,7 @@ int ble_transport_start_cli(bdaddr_t *bda)
 
     // connect to server
     status = connect(s, (struct sockaddr *)&addr, sizeof(addr));
-    ret_chk(status, "connect failed");
+    ret_chk(status, "connect failed %m");
 
     status = write(s, "hello!", 6);
     ret_chk(status <= 0, "write failed");

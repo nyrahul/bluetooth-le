@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <sys/time.h>
 
 #define FAILURE -1
 #define SUCCESS 0
@@ -34,12 +35,19 @@ typedef struct _isync_dev_
     memcpy(DST, SRC, NUM);                                                     \
     (OFFSET) += (NUM);
 
-#define ERROR(...)                                                             \
-    printf(__VA_ARGS__);                                                       \
-    fflush(stdout);
-#define INFO(...)                                                              \
-    printf(__VA_ARGS__);                                                       \
-    fflush(stdout);
+#define PRN(STR, ...)                                                          \
+    {                                                                          \
+        struct timeval tv;                                                     \
+        gettimeofday(&tv, NULL);                                               \
+        printf("%5s %6ld:%-4ld ", STR, tv.tv_sec, tv.tv_usec / 1000);          \
+        printf(__VA_ARGS__);                                                   \
+        printf("\n");                                                          \
+        fflush(stdout);                                                        \
+    }
+
+#define ERROR(...) PRN("ERROR", __VA_ARGS__)
+
+#define INFO(...) PRN("INFO", __VA_ARGS__)
 
 #define TRUE 1
 #define FALSE 0
