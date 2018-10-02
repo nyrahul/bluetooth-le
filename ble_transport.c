@@ -141,8 +141,11 @@ int ble_transport_start_ssn(bdaddr_t *bda)
 {
     int sfd = -1;
 
-    sfd = l2cap_start_server(ISYNC_L2CAP_PSM);
-    ret_chk(sfd < 0, "l2cap_start_server failed");
+    if (!bda)
+    {
+        sfd = l2cap_start_server(ISYNC_L2CAP_PSM);
+        ret_chk(sfd < 0, "l2cap_start_server failed");
+    }
 
     return SUCCESS;
 ret_fail:
@@ -150,7 +153,21 @@ ret_fail:
     return FAILURE;
 }
 
-int ble_transport_init(void) { return epoll_init(); }
+int ble_transport_init(void)
+{
+    int ret;
+
+    ret = epoll_init();
+    ret_chk(ret != SUCCESS, "epoll_init failed");
+
+    ret = ble_transport_start_ssn(NULL);
+    ret_chk(ret != SUCCESS, "epoll_init failed");
+
+    return SUCCESS;
+ret_fail:
+    epoll_deinit();
+    return FAILURE;
+}
 
 void ble_transport_cleanup(void)
 {
