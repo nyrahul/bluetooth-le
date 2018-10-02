@@ -14,7 +14,7 @@ $(BIN):
 	@$(CF) -i $(COMMON_HDR)
 	@mkdir -p $(BIN) 2>/dev/null
 
-$(BIN)/%.o: %.c
+$(BIN)/%.o: %.c $(COMMON_HDR)
 	@$(CF) -i $<
 	$(CC) $(CFLAGS) -c $< -o $@
 

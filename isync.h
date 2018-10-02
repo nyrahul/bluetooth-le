@@ -39,7 +39,7 @@ typedef struct _isync_dev_
     {                                                                          \
         struct timeval tv;                                                     \
         gettimeofday(&tv, NULL);                                               \
-        printf("%5s %6ld:%-4ld ", STR, tv.tv_sec, tv.tv_usec / 1000);          \
+        printf("%-5s %5ld:%-4ld", STR, tv.tv_sec % 100000, tv.tv_usec / 1000); \
         printf(__VA_ARGS__);                                                   \
         printf("\n");                                                          \
         fflush(stdout);                                                        \
