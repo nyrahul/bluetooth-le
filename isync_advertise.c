@@ -1,7 +1,5 @@
 #include <errno.h>
-#include <stdlib.h>
 #include <ctype.h>
-#include <signal.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 
@@ -17,7 +15,6 @@
 #define EIR_MANUFACTURE_SPECIFIC 0xFF
 
 int device_handle;
-uint8_t status;
 
 unsigned int *uuid_str_to_data(char *uuid)
 {
@@ -44,6 +41,7 @@ unsigned int twoc(int in, int t)
 int advertise_enable(int enable)
 {
     struct hci_request rq;
+    uint8_t status;
     le_set_advertise_enable_cp advertise_cp;
 
     memset(&advertise_cp, 0, sizeof(advertise_cp));
@@ -63,6 +61,7 @@ int advertise_enable(int enable)
 int advertise_params_cp(int interval)
 {
     struct hci_request rq;
+    uint8_t status;
     le_set_advertising_parameters_cp adv_params_cp;
 
     memset(&adv_params_cp, 0, sizeof(adv_params_cp));
@@ -95,17 +94,17 @@ int get_device_handle(void)
     return device_handle;
 }
 
-void cleanup(int sig)
+void isync_adv_cleanup(void)
 {
     advertise_enable(0);
-    printf("bye.\n");
-    exit(0);
+    hci_close_dev(device_handle);
 }
 
 #define UUID_STR "EAC5BDB5DFCB48D2BE60D0A5A71G96E0"
 int advertise_data(void)
 {
     struct hci_request rq;
+    uint8_t status;
     uint8_t off = 1;
     le_set_advertising_data_cp dcp;
 
@@ -211,6 +210,7 @@ int isync_set_devauth(uint8_t *data, size_t data_len)
 int advertise_isync_data(void)
 {
     int ret;
+    uint8_t status;
     struct hci_request rq;
     uint8_t off = 1;
     le_set_advertising_data_cp dcp;
@@ -267,41 +267,24 @@ int advertise_isync_data(void)
     return hci_send_req(device_handle, &rq, 1000);
 }
 
-void main(int argc, char **argv)
+int isync_advertise(void)
 {
     int ret;
 
     get_device_handle();
-    signal(SIGINT, cleanup);
 
     ret = advertise_params_cp(atoi("200"));
-    if (ret < 0)
-        goto done;
+    ret_chk(ret < 0, "advertise_params_cp failed");
 
-    // ret = advertise_data();
     ret = advertise_isync_data();
-    if (ret < 0)
-        goto done;
+    ret_chk(ret < 0, "advertise_isync_data failed");
 
     ret = advertise_enable(1);
-    if (ret < 0)
-        goto done;
+    ret_chk(ret < 0, "advertise_enable failed");
 
-    printf("Press Ctrl-c to stop advertising...\n");
-    pause();
-
-done:
-    if (ret < 0)
-    {
-        fprintf(stderr, "Can't set advertise mode on hci: %s (%d)\n",
-            strerror(errno), errno);
-    }
-
-    if (status)
-    {
-        fprintf(stderr, "LE set advertise enable on hci returned status %d\n",
-            status);
-    }
-    advertise_enable(0);
-    hci_close_dev(device_handle);
+    return SUCCESS;
+ret_fail:
+    ERROR("Can't set advertise mode on hci: %s (%d)\n", strerror(errno), errno);
+    isync_adv_cleanup();
+    return FAILURE;
 }

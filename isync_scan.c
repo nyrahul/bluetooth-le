@@ -320,20 +320,17 @@ int get_rssi(bdaddr_t *bdaddr, struct hci_state current_hci_state)
     usleep(10000);
     hci_disconnect(current_hci_state.device_handle, handle,
         HCI_OE_USER_ENDED_CONNECTION, 10000);
+    return SUCCESS;
 }
 
-void cleanup(int sig)
+void isync_scan_cleanup(void)
 {
     stop_hci_scan(current_hci_state);
-
     error_check_and_exit(current_hci_state);
-
     close_hci_device(current_hci_state);
-    INFO("bye..\n");
-    exit(0);
 }
 
-void main(void)
+int isync_scan(void)
 {
     current_hci_state = open_default_hci_device();
 
@@ -342,9 +339,6 @@ void main(void)
     start_hci_scan(current_hci_state);
 
     error_check_and_exit(current_hci_state);
-
-    signal(SIGINT, cleanup);
-    INFO("Scanning...\n");
 
     int done  = FALSE;
     int error = FALSE;
@@ -428,4 +422,6 @@ void main(void)
     error_check_and_exit(current_hci_state);
 
     close_hci_device(current_hci_state);
+
+    return SUCCESS;
 }

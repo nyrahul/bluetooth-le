@@ -1,22 +1,25 @@
-CC=gcc
-CF=clang-format-6.0
-BIN=bin
-TARGETS=$(BIN)/isync_advertise $(BIN)/isync_scan
-COMMON_HDR=isync.h
-LDFLAGS=-lbluetooth
+CC := gcc
+CF := clang-format-6.0
+BIN  := bin
+SRCS := $(wildcard *.c)
+OBJS := $(patsubst %.c,$(BIN)/%.o,$(SRCS))
+TARGET := $(BIN)/isync_ble
+COMMON_HDR := isync.h epoll_util.h
+CFLAGS := -Wall -g
+LDFLAGS := -lbluetooth -lpthread
 
-all: $(BIN) $(TARGETS)
+all: $(BIN) $(TARGET)
 
 $(BIN):
+	@$(CF) -i $(COMMON_HDR)
 	@mkdir -p $(BIN) 2>/dev/null
 
-$(BIN)/isync_advertise: isync_advertise.c $(COMMON_HDR)
+$(BIN)/%.o: %.c
 	@$(CF) -i $<
-	$(CC) $< -o $@ $(LDFLAGS)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BIN)/isync_scan: isync_scan.c $(COMMON_HDR)
-	@$(CF) -i $<
-	$(CC) $< -o $@ $(LDFLAGS)
+$(TARGET): $(OBJS) $(COMMON_HDR)
+	$(CC) -o $@ $(OBJS) $(LDFLAGS)
 
 clean:
 	@rm -rf ./$(BIN)
