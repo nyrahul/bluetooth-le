@@ -53,7 +53,6 @@ void *epoll_thread(void *arg)
                 (events[i].events & EPOLLHUP) ||
                 (!(events[i].events & EPOLLIN)))
             {
-                ERROR("epoll error");
                 ER_CB(fi);
                 continue;
             }

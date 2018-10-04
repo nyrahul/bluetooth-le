@@ -17,6 +17,7 @@ void ssn_release(session_t *ssn)
 {
     if (!ssn)
         return;
+    INFO("closing session with fd:%d", ssn->fi.fd);
     CLOSE(ssn->fi.fd);
     FREE(ssn);
 }
@@ -72,7 +73,6 @@ ret_fail:
 int error_handler(fdinfo_t *fi)
 {
     session_t *ssn = fi->ptr;
-    ERROR("Error handler called");
     ssn_release(ssn);
     return SUCCESS;
 }
