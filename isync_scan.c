@@ -206,8 +206,12 @@ int isync_handle_adv(le_advertising_info *info, uint8_t *data, size_t data_len)
         ERROR("Failure parsing devauth\n");
         return FAILURE;
     }
-    ret = ble_transport_start_cli(&info->bdaddr);
-    INFO("ble_transport_start_cli ret=%d\n", ret);
+
+    char addr[18];
+    ba2str(&info->bdaddr, addr);
+    ret = ble_transport_start_cli(addr);
+    // ret = ble_transport_start_cli(&info->bdaddr);
+    INFO("ble_transport_start_cli ret=%d addr=%s\n", ret, addr);
     return SUCCESS;
 }
 
@@ -226,15 +230,17 @@ void process_data(uint8_t *data, size_t data_len, le_advertising_info *info)
         char addr[18];
         ba2str(&info->bdaddr, addr);
 
-        INFO("addr=%s name=%s\n", addr, name);
+        INFO("addr=%s name=%s", addr, name);
     }
     else if (data[0] == EIR_FLAGS)
     {
-        INFO("Flag type: len=%zu\n", data_len);
+#if 0
+        INFO("Flag type: len=%zu", data_len);
         for (i = 1; i < data_len; i++)
         {
             INFO("\tFlag data: 0x%0X\n", data[i]);
         }
+#endif
     }
     else if (data[0] == EIR_MANUFACTURE_SPECIFIC)
     {
@@ -243,17 +249,19 @@ void process_data(uint8_t *data, size_t data_len, le_advertising_info *info)
         i = 1;
         GETB(&company_id, &data[i], 2, i);
 
-        INFO("Manufacture specific type: len=%zu Manufacture:%04X\n", data_len,
-            company_id);
-
         if (COMPANY_ID_HUAWEI == company_id)
         {
             uint8_t type;
 
-            GETB(&type, &data[i], 1, i);
-            INFO("type:%02X\n", type);
+            INFO("Manufacture specific type: len=%zu Manufacture:%04X",
+                data_len, company_id);
 
+            GETB(&type, &data[i], 1, i);
+            INFO("type:%02X", type);
+
+#if 0
             print_hex("DATA", data + i, data_len - i);
+#endif
 
             if (TYPE_ISYNC == type)
             {
@@ -262,14 +270,18 @@ void process_data(uint8_t *data, size_t data_len, le_advertising_info *info)
                 isync_handle_adv(info, data + i, data_len - i);
             }
         }
+#if 0
         else
         {
             print_hex("DATA", data + i, data_len - i);
         }
+#endif
     }
     else
     {
-        INFO("Unknown type: type=%X\n", data[0]);
+#if 0
+        INFO("Unknown type: type=%X", data[0]);
+#endif
     }
 }
 
@@ -375,13 +387,14 @@ int isync_scan(void)
             {
                 continue;
             }
-            INFO("Rcvd LE_ADVERTISING_REPORT\n");
 
             // RJ: Specs 7.7.65.2 LE Advertising Report Event
             le_advertising_info *info = (le_advertising_info *)(meta->data + 1);
 
+#if 0
             INFO("Event: %d\n", info->evt_type);
             INFO("Length: %d\n", info->length);
+#endif
 
             if (info->length == 0)
             {

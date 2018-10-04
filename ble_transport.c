@@ -99,7 +99,7 @@ ret_fail:
     return NULL;
 }
 
-int ble_transport_start_cli(bdaddr_t *bda)
+int ble_transport_start_cli(const char *peeraddr)
 {
     struct sockaddr_l2 addr = {0};
     int s                   = -1, status;
@@ -112,9 +112,9 @@ int ble_transport_start_cli(bdaddr_t *bda)
     // set the connection parameters (who to connect to)
     addr.l2_family = AF_BLUETOOTH;
     addr.l2_psm    = htobs(ISYNC_L2CAP_PSM);
-    addr.l2_bdaddr = *bda;
+    str2ba(peeraddr, &addr.l2_bdaddr);
+    // addr.l2_bdaddr = *bda;
 
-    // connect to server
     status = connect(s, (struct sockaddr *)&addr, sizeof(addr));
     ret_chk(status, "connect failed %m");
 
