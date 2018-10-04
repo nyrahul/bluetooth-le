@@ -25,6 +25,7 @@ int accept_handler(fdinfo_t *fi)
 {
     char buf[256];
     int client                  = -1;
+    int ret                     = 0;
     session_t *ssn              = NULL;
     struct sockaddr_l2 rem_addr = {0};
     socklen_t opt               = sizeof(rem_addr);
@@ -37,6 +38,9 @@ int accept_handler(fdinfo_t *fi)
 
     ssn = ssn_alloc(client, 0);
     ret_chk(!ssn, "ssn_alloc failed");
+
+    ret = epoll_add_fd(&ssn->fi);
+    ret_chk(ret < 0, "epoll_add_fd failed");
 
     client = -1;
 
