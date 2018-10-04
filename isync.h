@@ -73,4 +73,4 @@ typedef struct _isync_dev_
         goto ret_fail;                                                         \
     }
 
-#define ISYNC_L2CAP_PSM 0x1001
+#define ISYNC_L2CAP_PSM 0x1025
