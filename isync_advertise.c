@@ -123,9 +123,9 @@ int advertise_data(void)
     dcp.data[dcp.length + off] = htobs(EIR_MANUFACTURE_SPECIFIC);
     off++;
     // SET Manufacturer - Huawei=0x027D, Apple=0x004C
-    dcp.data[dcp.length + off] = htobs(0x7D);
+    dcp.data[dcp.length + off] = htobs(COMPANY_ID_HUAWEI & 0x00FF);
     off++;
-    dcp.data[dcp.length + off] = htobs(0x02);
+    dcp.data[dcp.length + off] = htobs(COMPANY_ID_HUAWEI >> 8);
     off++;
 
     // Set Type 02=Beacon
