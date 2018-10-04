@@ -10,7 +10,7 @@
 #define FAILURE -1
 #define SUCCESS 0
 
-#define COMPANY_ID_HUAWEI 0x027D // As defined in bluetooth SIG
+#define COMPANY_ID_HUAWEI 0xF27D // As defined in bluetooth SIG
 
 // First byte of manufacture specific data after company id
 #define TYPE_ISYNC 0x88
