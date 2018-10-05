@@ -141,11 +141,13 @@ ret_fail:
 }
 
 #if USE_RFCOMM
+#    define FLAGS (SSN_IS_SERVER | SSN_IS_RFCOMM)
 #    define srv_port ISYNC_RFCOMM_CHN
 #    define srv_ble_xport rfcomm_start_server
 #    define cli_ble_xport rfcomm_start_cli
 #    define cli_close rfcomm_close
 #else // L2CAP
+#    define FLAGS (SSN_IS_SERVER | SSN_IS_L2CAP)
 #    define srv_port ISYNC_L2CAP_PSM
 #    define srv_ble_xport l2cap_start_server
 #    define cli_ble_xport l2cap_start_cli
@@ -191,7 +193,7 @@ int ble_transport_start_ssn(void)
         return FAILURE;
     }
 
-    ssn = ssn_alloc(sfd, 1);
+    ssn = ssn_alloc(sfd, FLAGS);
     if (!ssn)
     {
         ERROR("ssn_alloc failed\n");
