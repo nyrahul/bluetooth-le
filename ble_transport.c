@@ -142,7 +142,7 @@ ret_fail:
 
 #if USE_RFCOMM
 #    define FLAGS (SSN_IS_SERVER | SSN_IS_RFCOMM)
-#    define srv_port ISYNC_RFCOMM_CHN
+#    define srv_port USE_RFCOMM
 #    define srv_ble_xport rfcomm_start_server
 #    define cli_ble_xport rfcomm_start_cli
 #    define cli_close rfcomm_close
@@ -214,6 +214,7 @@ int ble_transport_init(void)
     ret = ble_transport_start_ssn();
     ret_chk(ret != SUCCESS, "epoll_init failed");
 
+    INFO("ble transport inited");
     return SUCCESS;
 ret_fail:
     epoll_deinit();
