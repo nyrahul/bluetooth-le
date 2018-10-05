@@ -75,3 +75,4 @@ typedef struct _isync_dev_
 
 #define ISYNC_L2CAP_PSM 0x1025
 #define ISYNC_RFCOMM_CHN 0
+
