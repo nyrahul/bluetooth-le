@@ -4,7 +4,6 @@
 #include "isync.h"
 #include "epoll_util.h"
 #include "ble_transport.h"
-#include <bluetooth/l2cap.h>
 
 typedef struct _sess_
 {
@@ -24,24 +23,41 @@ void ssn_release(session_t *ssn)
 
 int accept_handler(fdinfo_t *fi)
 {
-    char buf[256];
-    int client                  = -1;
-    int ret                     = 0;
-    session_t *ssn              = NULL;
-    struct sockaddr_l2 rem_addr = {0};
-    socklen_t opt               = sizeof(rem_addr);
+    ERROR("GENERAL ACCEPT HANDLER NOT IMPLEMENTED\n");
+    return FAILURE;
+}
 
-    client = accept(fi->fd, (struct sockaddr *)&rem_addr, &opt);
-    ret_chk(client < 0, "accept failed");
+int l2cap_accept_handler(fdinfo_t *fi)
+{
+    int client     = -1;
+    session_t *ssn = NULL;
 
-    ba2str(&rem_addr.l2_bdaddr, buf);
-    INFO("accepted connection from %s\n", buf);
+    client = l2cap_accept(fi->fd);
+    ret_chk(client < 0, "l2cap_accept failed");
 
     ssn = ssn_alloc(client, 0);
     ret_chk(!ssn, "ssn_alloc failed");
 
-    ret = epoll_add_fd(&ssn->fi);
-    ret_chk(ret < 0, "epoll_add_fd failed");
+    client = -1;
+
+    return SUCCESS;
+
+ret_fail:
+    ssn_release(ssn);
+    CLOSE(client);
+    return FAILURE;
+}
+
+int rfcomm_accept_handler(fdinfo_t *fi)
+{
+    int client     = -1;
+    session_t *ssn = NULL;
+
+    client = rfcomm_accept(fi->fd);
+    ret_chk(client < 0, "rfcomm_accept failed");
+
+    ssn = ssn_alloc(client, 0);
+    ret_chk(!ssn, "ssn_alloc failed");
 
     client = -1;
 
@@ -77,18 +93,36 @@ int error_handler(fdinfo_t *fi)
     return SUCCESS;
 }
 
-session_t *ssn_alloc(int fd, int is_server)
+#define SSN_IS_SERVER (1 << 0)
+#define SSN_IS_L2CAP (1 << 1)
+#define SSN_IS_RFCOMM (1 << 2)
+
+cb_fdinfo_t get_accept_handler(int flags)
+{
+    if (flags & SSN_IS_L2CAP)
+    {
+        return l2cap_accept_handler;
+    }
+    else if (flags & SSN_IS_RFCOMM)
+    {
+        return rfcomm_accept_handler;
+    }
+    return accept_handler;
+}
+
+session_t *ssn_alloc(int fd, int flags)
 {
     session_t *ssn = NULL;
+    int ret;
 
     ssn = calloc(sizeof(session_t), 1);
     ret_chk(!ssn, "calloc failed");
 
     ssn->fi.fd    = fd;
     ssn->fi.er_cb = error_handler;
-    if (is_server)
+    if (flags & SSN_IS_SERVER)
     {
-        ssn->fi.rd_cb = accept_handler;
+        ssn->fi.rd_cb = get_accept_handler(flags);
     }
     else
     {
@@ -97,72 +131,47 @@ session_t *ssn_alloc(int fd, int is_server)
     }
     ssn->fi.ptr = ssn;
 
+    ret = epoll_add_fd(&ssn->fi);
+    ret_chk(ret < 0, "epoll_add_fd failed");
+
     return ssn;
 ret_fail:
     FREE(ssn);
     return NULL;
 }
 
-int ble_transport_start_cli(const char *peeraddr)
+#if USE_RFCOMM
+#    define srv_port ISYNC_RFCOMM_CHN
+#    define srv_ble_xport rfcomm_start_server
+#    define cli_ble_xport rfcomm_start_cli
+#    define cli_close rfcomm_close
+#else // L2CAP
+#    define srv_port ISYNC_L2CAP_PSM
+#    define srv_ble_xport l2cap_start_server
+#    define cli_ble_xport l2cap_start_cli
+#    define cli_close l2cap_close
+#endif
+
+void *ble_transport_start_cli(const char *peeraddr)
 {
-    struct sockaddr_l2 addr = {0};
-    int s                   = -1, status;
-    int ret                 = FAILURE;
+    session_t *ssn = NULL;
+    int sfd        = -1;
 
-    // allocate a socket
-    s = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
-    ret_chk(s < 0, "socket failed");
+    sfd = cli_ble_xport(peeraddr);
+    if (sfd < 0)
+    {
+        ERROR("start_cli failed\n");
+        return NULL;
+    }
 
-    // set the connection parameters (who to connect to)
-    addr.l2_family = AF_BLUETOOTH;
-    addr.l2_psm    = htobs(ISYNC_L2CAP_PSM);
-    str2ba(peeraddr, &addr.l2_bdaddr);
-    // addr.l2_bdaddr = *bda;
+    ssn = ssn_alloc(sfd, 0);
+    if (!ssn)
+    {
+        ERROR("ssn_alloc failed");
+        cli_close(sfd);
+    }
 
-    status = connect(s, (struct sockaddr *)&addr, sizeof(addr));
-    ret_chk(status, "connect failed %m");
-
-    status = write(s, "hello!", 6);
-    ret_chk(status <= 0, "write failed");
-
-    ret = SUCCESS;
-
-ret_fail:
-    CLOSE(s);
-    return ret;
-}
-
-int l2cap_start_server(uint16_t psm)
-{
-    struct sockaddr_l2 loc_addr = {0};
-    int s                       = -1, ret;
-    session_t *ssn              = NULL;
-
-    s = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
-    ret_chk(s < 0, "socket failed");
-
-    loc_addr.l2_family = AF_BLUETOOTH;
-    loc_addr.l2_bdaddr = *BDADDR_ANY;
-    loc_addr.l2_psm    = htobs(psm);
-
-    ret = bind(s, (struct sockaddr *)&loc_addr, sizeof(loc_addr));
-    ret_chk(ret < 0, "bind failed");
-
-    ret = listen(s, 10);
-    ret_chk(ret < 0, "listen failed");
-
-    ssn = ssn_alloc(s, 1);
-    ret_chk(!ssn, "ssn_alloc failed");
-
-    ret = epoll_add_fd(&ssn->fi);
-    ret_chk(ret < 0, "epoll_add_fd failed");
-
-    return s;
-
-ret_fail:
-    CLOSE(s);
-    FREE(ssn);
-    return FAILURE;
+    return ssn;
 }
 
 void ssn_releaseall(void)
@@ -170,20 +179,27 @@ void ssn_releaseall(void)
     // TODO release all sessions
 }
 
-int ble_transport_start_ssn(bdaddr_t *bda)
+int ble_transport_start_ssn(void)
 {
-    int sfd = -1;
+    session_t *ssn = NULL;
+    int sfd        = -1;
 
-    if (!bda)
+    sfd = srv_ble_xport(srv_port);
+    if (sfd < 0)
     {
-        sfd = l2cap_start_server(ISYNC_L2CAP_PSM);
-        ret_chk(sfd < 0, "l2cap_start_server failed");
+        ERROR("start_server failed");
+        return FAILURE;
+    }
+
+    ssn = ssn_alloc(sfd, 1);
+    if (!ssn)
+    {
+        ERROR("ssn_alloc failed\n");
+        cli_close(sfd);
+        return FAILURE;
     }
 
     return SUCCESS;
-ret_fail:
-    CLOSE(sfd);
-    return FAILURE;
 }
 
 int ble_transport_init(void)
@@ -193,7 +209,7 @@ int ble_transport_init(void)
     ret = epoll_init();
     ret_chk(ret != SUCCESS, "epoll_init failed");
 
-    ret = ble_transport_start_ssn(NULL);
+    ret = ble_transport_start_ssn();
     ret_chk(ret != SUCCESS, "epoll_init failed");
 
     return SUCCESS;

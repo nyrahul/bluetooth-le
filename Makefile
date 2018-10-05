@@ -5,7 +5,7 @@ SRCS := $(wildcard *.c)
 OBJS := $(patsubst %.c,$(BIN)/%.o,$(SRCS))
 TARGET := $(BIN)/isync_ble
 COMMON_HDR := isync.h epoll_util.h
-CFLAGS := -Wall -g
+CFLAGS := -Wall -g -DUSE_RFCOMM=1
 LDFLAGS := -lbluetooth -lpthread
 
 all: $(BIN) $(TARGET)

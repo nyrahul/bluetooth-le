@@ -208,10 +208,11 @@ int isync_handle_adv(le_advertising_info *info, uint8_t *data, size_t data_len)
     }
 
     char addr[18];
+    void *ssn;
     ba2str(&info->bdaddr, addr);
-    ret = ble_transport_start_cli(addr);
+    ssn = ble_transport_start_cli(addr);
     // ret = ble_transport_start_cli(&info->bdaddr);
-    INFO("ble_transport_start_cli ret=%d addr=%s", ret, addr);
+    INFO("ble_transport_start_cli ssn=%p addr=%s", ssn, addr);
     return SUCCESS;
 }
 
