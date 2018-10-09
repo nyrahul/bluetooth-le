@@ -11,18 +11,20 @@ typedef enum {
     CHN_DISC,
     DATA_TRANSFER,
     FILE_TRANSFER,
-}type_e;
+}notify_type_e;
 
 typedef enum {
     OP_SUCCESS,
     OP_FAILURE,
-    ADD,
-    REM,
+    OP_ADD,
+    OP_REM,
 }subtype_e;
 
-typedef int (*hisync_notify_cb)(type_e type, subtype_e sub_type, void *buf, size_t buflen);
+typedef int (*hisync_notify_cb)(const notify_type_e type, const subtype_e sub_type, const void *buf, const size_t buflen);
 
 int hisync_init(uint32_t rid, int devtype, hisync_notify_cb notifycb);
+
+void hisync_stop(void);
 
 
 /*

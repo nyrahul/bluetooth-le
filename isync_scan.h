@@ -1,4 +1,6 @@
 #pragma once
 
-int isync_scan(void);
-void isync_scan_cleanup(void);
+typedef int (*scan_notify_cb)(const char *addrstr);
+
+int     isync_scan(scan_notify_cb);
+void    isync_scan_cleanup(void);

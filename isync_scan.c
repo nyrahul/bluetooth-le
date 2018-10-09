@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <signal.h>
+#include <pthread.h>
 #include <sys/ioctl.h>
 
 #include <bluetooth/bluetooth.h>
@@ -9,12 +10,15 @@
 #include <bluetooth/hci_lib.h>
 
 #include "isync.h"
+#include "isync_scan.h"
 #include "ble_transport.h"
 
 #define HCI_STATE_NONE 0
 #define HCI_STATE_OPEN 2
 #define HCI_STATE_SCANNING 3
 #define HCI_STATE_FILTERING 4
+
+scan_notify_cb g_scan_notify_cb;
 
 struct hci_state
 {
@@ -33,7 +37,7 @@ struct hci_state
 
 struct hci_state current_hci_state;
 
-struct hci_state open_default_hci_device()
+struct hci_state open_default_hci_device(void)
 {
     struct hci_state current_hci_state = {0};
 
@@ -186,6 +190,7 @@ int isync_handle_devauth(uint8_t *data, size_t data_len)
 
 int isync_handle_adv(le_advertising_info *info, uint8_t *data, size_t data_len)
 {
+    char addr[18];
     int ret      = 0;
     int offset   = 0;
     uint8_t type = 0;
@@ -207,12 +212,10 @@ int isync_handle_adv(le_advertising_info *info, uint8_t *data, size_t data_len)
         return FAILURE;
     }
 
-    char addr[18];
-    void *ssn;
-    ba2str(&info->bdaddr, addr);
-    ssn = ble_transport_start_cli(addr);
-    // ret = ble_transport_start_cli(&info->bdaddr);
-    INFO("ble_transport_start_cli ssn=%p addr=%s", ssn, addr);
+    if (g_scan_notify_cb)
+    {
+        g_scan_notify_cb(addr);
+    }
     return SUCCESS;
 }
 
@@ -340,20 +343,11 @@ int get_rssi(bdaddr_t *bdaddr, struct hci_state current_hci_state)
 void isync_scan_cleanup(void)
 {
     stop_hci_scan(current_hci_state);
-    error_check_and_exit(current_hci_state);
     close_hci_device(current_hci_state);
 }
 
-int isync_scan(void)
+void *scan_thread(void *arg)
 {
-    current_hci_state = open_default_hci_device();
-
-    error_check_and_exit(current_hci_state);
-
-    start_hci_scan(current_hci_state);
-
-    error_check_and_exit(current_hci_state);
-
     int done  = FALSE;
     int error = FALSE;
     while (!done && !error)
@@ -425,17 +419,32 @@ int isync_scan(void)
             }
         }
     }
+    return NULL;
+}
 
-    if (error)
-    {
-        ERROR("Error scanning.");
-    }
+int isync_scan(scan_notify_cb cb)
+{
+    pthread_t tid;
 
-    stop_hci_scan(current_hci_state);
+    g_scan_notify_cb = cb;
+
+    current_hci_state = open_default_hci_device();
 
     error_check_and_exit(current_hci_state);
 
-    close_hci_device(current_hci_state);
+    start_hci_scan(current_hci_state);
+
+    error_check_and_exit(current_hci_state);
+
+    if (pthread_create(&tid, NULL, scan_thread, NULL))
+    {
+        goto ret_fail;
+    }
+    pthread_detach(tid);
 
     return SUCCESS;
+
+ret_fail:
+    isync_scan_cleanup();
+    return FAILURE;
 }

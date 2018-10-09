@@ -3,10 +3,11 @@ CF := clang-format-6.0
 BIN  := bin
 SRCS := $(wildcard *.c)
 OBJS := $(patsubst %.c,$(BIN)/%.o,$(SRCS))
-TARGET := $(BIN)/isync_ble
+TARGET := $(BIN)/libhidevice.so
 COMMON_HDR := isync.h epoll_util.h
-CFLAGS := -Wall -g -DUSE_RFCOMM=7
-LDFLAGS := -lbluetooth -lpthread
+CFLAGS := -Wall -g -DUSE_RFCOMM=7 -fPIC
+LDFLAGS := -fPIC
+#LDFLAGS := -lbluetooth -lpthread
 
 all: $(BIN) $(TARGET)
 
@@ -19,7 +20,7 @@ $(BIN)/%.o: %.c $(COMMON_HDR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(TARGET): $(OBJS) $(COMMON_HDR)
-	$(CC) -o $@ $(OBJS) $(LDFLAGS)
+	$(CC) -shared -o $@ $(OBJS) $(LDFLAGS)
 
 clean:
 	@rm -rf ./$(BIN)
