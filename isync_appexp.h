@@ -20,11 +20,20 @@ typedef enum {
     OP_REM,
 }subtype_e;
 
-typedef int (*hisync_notify_cb)(const notify_type_e type, const subtype_e sub_type, const void *buf, const size_t buflen);
+typedef struct _node_cfg_
+{
+    uint32_t rid;
+    uint16_t devtype;
+#define MAX_SSID_LEN    128
+    char wifi_ssid[MAX_SSID_LEN];
+}node_cfg_t;
 
-int hisync_init(uint32_t rid, int devtype, hisync_notify_cb notifycb);
+typedef int (*hisync_notify_cb)(const notify_type_e type, const subtype_e sub_type,
+                                const void *buf, const size_t buflen);
 
-void hisync_stop(void);
+int     hisync_init(const node_cfg_t *cfg, hisync_notify_cb notifycb);
+
+void    hisync_stop(void);
 
 
 /*

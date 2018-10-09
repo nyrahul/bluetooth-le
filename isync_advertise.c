@@ -267,7 +267,7 @@ int advertise_isync_data(void)
     return hci_send_req(device_handle, &rq, 1000);
 }
 
-int isync_advertise(void)
+int isync_advertise(const uint32_t rid, const uint16_t devtype)
 {
     int ret;
 

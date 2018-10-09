@@ -22,7 +22,7 @@ int ble_scan_notify(const char *addrstr)
     return SUCCESS;
 }
 
-int hisync_init(uint32_t rid, int devtype, hisync_notify_cb notifycb)
+int hisync_init(const node_cfg_t *cfg, hisync_notify_cb notifycb)
 {
     int ret;
 
@@ -31,7 +31,7 @@ int hisync_init(uint32_t rid, int devtype, hisync_notify_cb notifycb)
     ret = ble_transport_init();
     ret_chk(ret != SUCCESS, "ble_transport_init failed");
 
-    ret = isync_advertise();
+    ret = isync_advertise(cfg->rid, cfg->devtype);
     ret_chk(ret != SUCCESS, "isync_advertise failed");
 
     ret = isync_scan(ble_scan_notify); // this is a blocking call
