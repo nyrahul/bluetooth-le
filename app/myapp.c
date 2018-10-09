@@ -1,4 +1,5 @@
 #include <signal.h>
+#include <string.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,7 +13,8 @@ void cleanup(int sig)
     exit(0);
 }
 
-int hidev_notification(const notify_type_e type, const subtype_e sub_type, const void *buf, const size_t buflen)
+int hidev_notification(const notify_type_e type, const subtype_e sub_type,
+                        const void *buf, const size_t buflen)
 {
     printf("GOT NOTIFICATION:\n");
     return 0;
@@ -21,10 +23,16 @@ int hidev_notification(const notify_type_e type, const subtype_e sub_type, const
 int main(void)
 {
     int ret;
+    node_cfg_t cfg;
+
+    memset(&cfg, 0, sizeof(cfg));
+    cfg.rid = 0xcafebabe;
+    cfg.devtype = 0xface;
+    strncpy(cfg.wifi_ssid, "magent5g", sizeof(cfg.wifi_ssid));
 
     signal(SIGINT, cleanup);
 
-    ret = hisync_init(0xcafebabe, 0xface, hidev_notification);
+    ret = hisync_init(&cfg, hidev_notification);
     printf("hisync_init ret:%d\n", ret);
 
     pause();

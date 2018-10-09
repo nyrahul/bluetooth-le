@@ -42,7 +42,7 @@ void    hisync_stop(void);
 */
 typedef struct _dev_info_
 {
-    int devtype; // type of device ... phone/laptop/...
+    uint16_t devtype; // type of device ... phone/laptop/...
     int devid;   // device id ... single user might have multiple devices of same type
 }dev_info_t;
 

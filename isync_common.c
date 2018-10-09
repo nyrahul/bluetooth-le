@@ -13,11 +13,16 @@ void hisync_stop(void)
     isync_scan_cleanup();
 }
 
-int ble_scan_notify(const char *addrstr)
+int ble_scan_notify(const char *addrstr, const size_t len)
 {
     void *ssn;
     ssn = ble_transport_start_cli(addrstr);
     INFO("ble_transport_start_cli ssn=%p addr=%s", ssn, addrstr);
+
+    if (g_notifycb)
+    {
+        g_notifycb(DEV_DISC, OP_ADD, addrstr, len);
+    }
 
     return SUCCESS;
 }

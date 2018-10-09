@@ -190,7 +190,7 @@ int isync_handle_devauth(uint8_t *data, size_t data_len)
 
 int isync_handle_adv(le_advertising_info *info, uint8_t *data, size_t data_len)
 {
-    char addr[18];
+    char addr[32];
     int ret      = 0;
     int offset   = 0;
     uint8_t type = 0;
@@ -214,7 +214,7 @@ int isync_handle_adv(le_advertising_info *info, uint8_t *data, size_t data_len)
 
     if (g_scan_notify_cb)
     {
-        g_scan_notify_cb(addr);
+        g_scan_notify_cb(addr, sizeof(addr));
     }
     return SUCCESS;
 }
