@@ -5,82 +5,49 @@
     -----------------------------
 */
 
-typedef enum {
-    DEV_DISC = 1,
-    SRV_DISC,
-    CHN_DISC,
-    DATA_TRANSFER,
-    FILE_TRANSFER,
-}notify_type_e;
-
-typedef enum {
-    OP_SUCCESS,
-    OP_FAILURE,
-    OP_ADD,
-    OP_REM,
-}subtype_e;
-
-typedef struct _node_cfg_
-{
-    uint32_t rid;
-    uint16_t devtype;
-#define MAX_SSID_LEN    128
-    char wifi_ssid[MAX_SSID_LEN];
-}node_cfg_t;
-
-typedef int (*hisync_notify_cb)(const notify_type_e type, const subtype_e sub_type,
-                                const void *buf, const size_t buflen);
-
-int     hisync_init(const node_cfg_t *cfg, hisync_notify_cb notifycb);
-
-void    hisync_stop(void);
-
+int isync_init(void);
+void isync_stop(void);
 
 /*
     Device Discovery Interfaces
     ---------------------------
 */
-typedef struct _dev_info_
+#define ISYNC_MAX_DEVID_LEN 32
+#define ISYNC_HWACT_LEN 128
+typedef struct _device_
 {
-    uint16_t devtype; // type of device ... phone/laptop/...
-    int devid;   // device id ... single user might have multiple devices of same type
-}dev_info_t;
+    char devid[ISYNC_MAX_DEVID_LEN];
+    char hwact[ISYNC_HWACT_LEN];
+    int devtype;
+} device_t;
 
-// Add Device: notifycb(DEV_DISC, ADD, dev_info_t *, sizeof(dev_info_t))
-// Rem Device: notifycb(DEV_DISC, REM, dev_info_t *, sizeof(dev_info_t))
+int isync_set_devid(const char *devid);
+int isync_get_devid(char *devid, const size_t len);
 
+int isync_set_devact(const char *act);
+int isync_get_devact(char *act, const size_t len);
 
-/*
-    Service Discovery Interfaces
-    ----------------------------
-*/
-typedef struct _service_info_
+int isync_set_devtype(const int type);
+int isync_get_devtype(void);
+
+#define ID_SYNC 0
+#define ID_CLIPBOARD 1
+
+typedef struct _service_
 {
-    int service_type;
-    int broadcast_service; // Is the service data available to all devs of the user?
-    //specify channel characteristics here
-    //does chn need reliability?
-    //is it high/low thruput, hi/lo latency?
-}service_info_t;
+    int id;
+    device_t dev;
+} service_t;
 
-int hisync_service_add(const service_info_t *service);
-// Return service_handle
+typedef int (*isync_servnotify_cb)(
+    const int id, device_t *dev, const uint8_t *buf, const size_t len);
 
-int hisync_service_update(const int service_handle, const service_info_t *service);
+int isync_service_observer(isync_servnotify_cb cb);
 
-/*
-    Channel Interfaces and Data transfer
-    ------------------------------------
-*/
-int hisync_channel_start(int service_handle);
-//Return channel_handle
+int isync_start_service(const int id);
+int isync_stop_service(const int id);
 
-int hisync_channel_send(int channel_handle, uint8_t *buf, size_t buflen, int flags);
-// Data is always received as full packets on receiver
+int isync_publish(const int id, const uint8_t *buf, const size_t len);
+int isync_subscribe(const int id, device_t *dev);
 
-int hisync_channel_sendfile(int channel_handle, const char *filepath, int flags);
-// Does async send
-// On timeout/send-success/failure .. reports event asynchronously
-
-int hisync_channel_close(int handle);
-
+int isync_send(const device_t *dev, const uint8_t *buf, const size_t len);

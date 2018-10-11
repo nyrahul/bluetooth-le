@@ -8,32 +8,43 @@
 
 void cleanup(int sig)
 {
-    hisync_stop();
+    isync_stop();
     printf("bye.\n");
     exit(0);
 }
 
-int hidev_notification(const notify_type_e type, const subtype_e sub_type,
-                        const void *buf, const size_t buflen)
+int service_notification(const int id, device_t *dev,
+                const uint8_t *buf, const size_t len)
 {
-    printf("GOT NOTIFICATION:\n");
+    printf("GOT SERVICE NOTIFICATION:\n");
     return 0;
 }
 
 int main(void)
 {
     int ret;
-    node_cfg_t cfg;
-
-    memset(&cfg, 0, sizeof(cfg));
-    cfg.rid = 0xcafebabe;
-    cfg.devtype = 0xface;
-    strncpy(cfg.wifi_ssid, "magent5g", sizeof(cfg.wifi_ssid));
 
     signal(SIGINT, cleanup);
 
-    ret = hisync_init(&cfg, hidev_notification);
-    printf("hisync_init ret:%d\n", ret);
+    isync_set_devid("myapp-dev");
+    isync_set_devact("myuser@huawei.com");
+    isync_set_devtype(0x1234);
+
+    ret = isync_init();
+    if(ret)
+    {
+        printf("isync_init failed ret:%d\n", ret);
+        return 1;
+    }
+
+    isync_service_observer(service_notification);
+
+    ret = isync_start_service(ID_CLIPBOARD);
+    if(ret)
+    {
+        printf("start_service failed\n");
+        return 1;
+    }
 
     pause();
     return 1;
