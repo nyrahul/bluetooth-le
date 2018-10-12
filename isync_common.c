@@ -1,7 +1,7 @@
 #include "isync.h"
 #include "bt/ble_advertise.h"
 #include "bt/ble_scan.h"
-#include "bt/ble_transport.h"
+#include "isync_transport.h"
 #include "isync_service.h"
 #include "isync_appexp.h"
 

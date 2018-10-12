@@ -1,7 +1,5 @@
 #pragma once
 
-#include <bluetooth/bluetooth.h>
-
 void *ble_transport_start_cli(const char *addr);
 int ble_transport_init(void);
 void ble_transport_cleanup(void);

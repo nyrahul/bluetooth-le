@@ -1,7 +1,7 @@
 #include <sys/socket.h>
 #include <errno.h>
 #include "isync.h"
-#include "ble_transport.h"
+#include <bluetooth/bluetooth.h>
 #include <bluetooth/l2cap.h>
 
 int l2cap_accept(int sfd)

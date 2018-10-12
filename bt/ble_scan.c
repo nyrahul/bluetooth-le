@@ -11,7 +11,6 @@
 
 #include "isync.h"
 #include "bt/ble_scan.h"
-#include "bt/ble_transport.h"
 
 #define HCI_STATE_NONE 0
 #define HCI_STATE_OPEN 2

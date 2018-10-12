@@ -1,7 +1,7 @@
 #include <sys/socket.h>
 #include <errno.h>
 #include "isync.h"
-#include "ble_transport.h"
+#include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
 
 int rfcomm_accept(int sfd)
