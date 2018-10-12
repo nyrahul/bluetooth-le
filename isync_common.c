@@ -1,6 +1,5 @@
 #include "isync.h"
-#include "bt/ble_advertise.h"
-#include "bt/ble_scan.h"
+#include "isync_pal.h"
 #include "isync_transport.h"
 #include "isync_service.h"
 #include "isync_appexp.h"
@@ -84,4 +83,3 @@ ret_fail:
     isync_stop();
     return ret;
 }
-

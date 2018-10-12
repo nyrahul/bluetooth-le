@@ -46,7 +46,23 @@ int main(void)
         printf("start_service failed\n");
         return 1;
     }
+#if 0
+    ret = isync_start_service(10);
+    ret = isync_start_service(11);
+    ret = isync_start_service(12);
+    ret = isync_start_service(13);
+    ret = isync_start_service(14);
+
+    {
+        int i;
+        for(i=10; i< 15; i++)
+        {
+            ret = isync_stop_service(i);
+        }
+    }
+#endif
 
     pause();
     return 1;
 }
+

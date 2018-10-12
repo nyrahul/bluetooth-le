@@ -11,12 +11,13 @@ typedef struct _sevice_info_
 isync_servnotify_cb g_srvnotify_cb;
 void *g_service_db;
 
-#define MAX_SERVICES 50
+#define MAX_SERVICES 5
 
 int service_cmp(void *recptr, void *myptr)
 {
     service_info_t *rec = recptr;
     service_info_t *my  = myptr;
+
     if (rec->id == my->id)
     {
         return 1;
@@ -53,6 +54,7 @@ service_info_t *get_service_from_id(int id)
 {
     service_info_t service;
     memset(&service, 0, sizeof(service));
+    service.id = id;
     return db_search(g_service_db, &service);
 }
 
@@ -69,6 +71,7 @@ int isync_start_service(const int id)
     memset(si, 0, sizeof(service_info_t));
     si->id = id;
 
+    INFO("Started service id=%d\n", id);
     return SUCCESS;
 ret_fail:
     return FAILURE;

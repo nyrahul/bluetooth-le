@@ -6,6 +6,8 @@ typedef struct _db_info_
     uint8_t *blk;
     uint32_t *usedmap;
     int mapsz;
+    int usecnt;
+    int maxcnt;
     size_t recsz;
     rec_cmp_cb cb;
 } db_info_t;
@@ -32,9 +34,12 @@ void *db_init(int recnum, size_t recsz, rec_cmp_cb cb)
     ret_chk(!db->usedmap, "calloc usedmap failed");
 
     db->blk = (uint8_t *)malloc(recnum * recsz);
-    ret_chk(!db->blk, "malloc %d %zu failed", recnum, recsz)
+    ret_chk(!db->blk, "malloc %d %zu failed", recnum, recsz);
 
-        db->recsz = recsz;
+    db->maxcnt = recnum;
+    db->usecnt = 0;
+    db->recsz  = recsz;
+    db->cb     = cb;
 
     return db;
 ret_fail:
@@ -78,6 +83,12 @@ void *db_alloc(void *dbptr)
     void *rec;
     int i, j;
 
+    if (db->usecnt >= db->maxcnt)
+    {
+        ERROR("DB max limit exceeded maxcnt:%d", db->maxcnt);
+        return NULL;
+    }
+
     for (i = 0; i < db->mapsz; i++)
     {
         if (db->usedmap[i] == (~(uint32_t)0))
@@ -88,6 +99,7 @@ void *db_alloc(void *dbptr)
             {
                 rec = get_rec(db, i * sizeof(uint32_t) + j);
                 db->usedmap[i] |= (1 << j);
+                db->usecnt++;
                 return rec;
             }
         }
@@ -109,4 +121,10 @@ void db_free(void *dbptr, void *ptr)
         return;
     }
     db->usedmap[i] |= ~(1 << off);
+    db->usecnt--;
+    if (db->usecnt < 0)
+    {
+        ERROR("SOMETHING IS TERRIBLY WRONG");
+        db->usecnt = 0;
+    }
 }

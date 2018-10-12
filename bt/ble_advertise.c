@@ -8,6 +8,7 @@
 #include <bluetooth/hci_lib.h>
 
 #include "isync.h"
+#include "isync_pal.h"
 
 #define EIR_FLAGS 0X01
 #define EIR_NAME_SHORT 0x08

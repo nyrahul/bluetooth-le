@@ -10,7 +10,7 @@
 #include <bluetooth/hci_lib.h>
 
 #include "isync.h"
-#include "bt/ble_scan.h"
+#include "isync_pal.h"
 
 #define HCI_STATE_NONE 0
 #define HCI_STATE_OPEN 2
