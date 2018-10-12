@@ -80,7 +80,7 @@ void start_hci_scan(struct hci_state current_hci_state)
         return;
     }
 
-    if (hci_le_set_scan_enable(current_hci_state.device_handle, 0x01, 1, 1000) <
+    if (hci_le_set_scan_enable(current_hci_state.device_handle, 0x01, 0, 1000) <
         0)
     {
         current_hci_state.has_error = TRUE;
@@ -187,9 +187,9 @@ int isync_handle_devauth(uint8_t *data, size_t data_len)
     return sizeof(hdr_dev_auth_t);
 }
 
-int isync_handle_adv(le_advertising_info *info, uint8_t *data, size_t data_len)
+int isync_handle_adv(
+    scan_info_t *sin, le_advertising_info *info, uint8_t *data, size_t data_len)
 {
-    char addr[32];
     int ret      = 0;
     int offset   = 0;
     uint8_t type = 0;
@@ -213,27 +213,25 @@ int isync_handle_adv(le_advertising_info *info, uint8_t *data, size_t data_len)
 
     if (g_scan_notify_cb)
     {
-        g_scan_notify_cb(addr, sizeof(addr));
+        g_scan_notify_cb(sin);
     }
     return SUCCESS;
 }
 
-#define MAX_NAME_LEN 256
-void process_data(uint8_t *data, size_t data_len, le_advertising_info *info)
+void process_data(
+    uint8_t *data, size_t data_len, le_advertising_info *info, scan_info_t *sin)
 {
     int i;
 
-    // INFO("Test: %p and %zu\n", data, data_len);
     if (data[0] == EIR_NAME_SHORT || data[0] == EIR_NAME_COMPLETE)
     {
-        char name[MAX_NAME_LEN] = {0};
-        size_t name_len         = data_len - 1;
-        memcpy(name, &data[1], name_len);
+        size_t name_len = data_len - 1;
+        memcpy(sin->name, &data[1], name_len);
 
-        char addr[18];
-        ba2str(&info->bdaddr, addr);
+        ba2str(&info->bdaddr, sin->addr);
 
-        INFO("addr=%s name=%s", addr, name);
+        INFO("addr=%s name=%s", sin->addr, sin->name);
+        g_scan_notify_cb(sin);
     }
     else if (data[0] == EIR_FLAGS)
     {
@@ -270,7 +268,7 @@ void process_data(uint8_t *data, size_t data_len, le_advertising_info *info)
             {
                 uint8_t version;
                 GETB(&version, &data[i], 1, i);
-                isync_handle_adv(info, data + i, data_len - i);
+                isync_handle_adv(sin, info, data + i, data_len - i);
             }
         }
 #if 0
@@ -349,6 +347,7 @@ void *scan_thread(void *arg)
 {
     int done  = FALSE;
     int error = FALSE;
+    scan_info_t sin;
 
     INFO("Starting ble scan...");
     while (!done && !error)
@@ -372,6 +371,7 @@ void *scan_thread(void *arg)
 
             error = TRUE;
         }
+        memset(&sin, 0, sizeof(sin));
 
         if (!done && !error)
         {
@@ -413,7 +413,7 @@ void *scan_thread(void *arg)
                 }
                 else
                 {
-                    process_data(info->data + offset + 1, data_len, info);
+                    process_data(info->data + offset + 1, data_len, info, &sin);
                     // get_rssi(&info->bdaddr, current_hci_state);
                     offset += data_len + 1;
                 }

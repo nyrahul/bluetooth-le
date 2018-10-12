@@ -2,6 +2,7 @@
 #include "isync_pal.h"
 #include "isync_transport.h"
 #include "isync_service.h"
+#include "isync_device.h"
 #include "isync_appexp.h"
 
 typedef struct _isync_config_
@@ -53,11 +54,14 @@ void isync_stop(void)
     isync_scan_cleanup();
 }
 
-int ble_scan_notify(const char *addrstr, const size_t len)
+int ble_scan_notify(const scan_info_t *sin)
 {
+#if 0
     void *ssn;
     ssn = ble_transport_start_cli(addrstr);
     INFO("ble_transport_start_cli ssn=%p addr=%s", ssn, addrstr);
+#endif
+    INFO("scan notify: addr=%s, name=%s", sin->addr, sin->name);
     return SUCCESS;
 }
 
