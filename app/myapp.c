@@ -36,6 +36,7 @@ int main(void)
         printf("isync_init failed ret:%d\n", ret);
         return 1;
     }
+    printf("isync init success\n");
 
     isync_service_observer(service_notification);
 

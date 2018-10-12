@@ -349,6 +349,8 @@ void *scan_thread(void *arg)
 {
     int done  = FALSE;
     int error = FALSE;
+
+    INFO("Starting ble scan...");
     while (!done && !error)
     {
         int len = 0;
