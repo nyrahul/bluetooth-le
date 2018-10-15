@@ -103,7 +103,7 @@ int isync_subscribe(const int id, device_t *dev)
     return SUCCESS;
 }
 
-int isync_send(const device_t *dev, const uint8_t *buf, const size_t len)
+int isync_send(const service_t *service, const uint8_t *buf, const size_t len)
 {
     /* TODO */
     return SUCCESS;

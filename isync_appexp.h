@@ -35,19 +35,19 @@ int isync_get_devtype(void);
 
 typedef struct _service_
 {
-    int id;
+    int service_id;
     device_t dev;
 } service_t;
 
 typedef int (*isync_servnotify_cb)(
-    const int id, device_t *dev, const uint8_t *buf, const size_t len);
+    const service_t *service, const uint8_t *buf, const size_t len);
 
 int isync_service_observer(isync_servnotify_cb cb);
 
-int isync_start_service(const int id);
-int isync_stop_service(const int id);
+int isync_start_service(const int service_id);
+int isync_stop_service(const int service_id);
 
-int isync_publish(const int id, const uint8_t *buf, const size_t len);
-int isync_subscribe(const int id, device_t *dev);
+int isync_publish(const int service_id, const uint8_t *buf, const size_t len);
+int isync_subscribe(const int service_id, device_t *dev);
 
-int isync_send(const device_t *dev, const uint8_t *buf, const size_t len);
+int isync_send(const service_t *service, const uint8_t *buf, const size_t len);

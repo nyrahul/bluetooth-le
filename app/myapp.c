@@ -13,7 +13,7 @@ void cleanup(int sig)
     exit(0);
 }
 
-int service_notification(const int id, device_t *dev,
+int service_notification(const service_t *service,
                 const uint8_t *buf, const size_t len)
 {
     printf("GOT SERVICE NOTIFICATION:\n");
