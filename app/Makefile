@@ -3,7 +3,7 @@ BIN  := .
 SRCS := $(wildcard *.c)
 TARGET := $(BIN)/app
 CFLAGS := -I../ -Wall -g -fPIC
-LDFLAGS := -lpthread -L../bin -lhidevice -lbluetooth
+LDFLAGS := -lpthread -L../bin/linux -lhidevice_linux -lbluetooth
 
 all: $(TARGET)
 
