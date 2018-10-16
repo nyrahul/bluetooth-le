@@ -31,7 +31,7 @@ int epoll_add_fd(fdinfo_t *fi)
 void *epoll_thread(void *arg)
 {
     struct epoll_event *events = NULL;
-    int n, i, efd = (int)(uintptr_t)arg;
+    int n, i;
     fdinfo_t *fi;
 
     events = calloc(MAXEVENTS, sizeof(struct epoll_event));
@@ -39,7 +39,7 @@ void *epoll_thread(void *arg)
 
     while (1)
     {
-        n = epoll_wait(efd, events, MAXEVENTS, -1);
+        n = epoll_wait(g_epollfd, events, MAXEVENTS, -1);
         if (n <= 0)
         {
             ERROR("epoll_wait returned n=%d", n);
@@ -86,8 +86,7 @@ int epoll_init(void)
     g_epollfd = epoll_create1(0);
     ret_chk(g_epollfd < 0, "epoll_create1 failed");
 
-    ret =
-        pthread_create(&tid, NULL, epoll_thread, (void *)(uintptr_t)g_epollfd);
+    ret = pthread_create(&tid, NULL, epoll_thread, NULL);
     ret_chk(ret, "pthread_create failed");
 
     return SUCCESS;

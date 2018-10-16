@@ -194,7 +194,7 @@ int isync_set_dev(uint8_t *data, size_t data_len)
     return sizeof(hdr_dev_t);
 }
 
-int isync_set_devauth(uint8_t *data, size_t data_len)
+int isync_set_devauth(const uint32_t rid, uint8_t *data, size_t data_len)
 {
     hdr_dev_auth_t *devauth = (hdr_dev_auth_t *)data;
     if (sizeof(hdr_dev_auth_t) > data_len)
@@ -208,7 +208,7 @@ int isync_set_devauth(uint8_t *data, size_t data_len)
 }
 
 #define DOFF (dcp.length + off)
-int advertise_isync_data(void)
+int advertise_isync_data(const uint32_t rid)
 {
     int ret;
     uint8_t status;
@@ -245,7 +245,7 @@ int advertise_isync_data(void)
     }
     off += ret;
 
-    ret = isync_set_devauth(&dcp.data[DOFF], sizeof(dcp.data) - DOFF);
+    ret = isync_set_devauth(rid, &dcp.data[DOFF], sizeof(dcp.data) - DOFF);
     if (ret <= 0)
     {
         ERROR("isync set dev failed\n");
@@ -277,7 +277,7 @@ int isync_advertise(const uint32_t rid, const uint16_t devtype)
     ret = advertise_params_cp(atoi("200"));
     ret_chk(ret < 0, "advertise_params_cp failed");
 
-    ret = advertise_isync_data();
+    ret = advertise_isync_data(rid);
     ret_chk(ret < 0, "advertise_isync_data failed");
 
     ret = advertise_enable(1);

@@ -75,7 +75,7 @@ int isync_init(void)
     ret = ble_transport_init();
     ret_chk(ret != SUCCESS, "ble_transport_init failed");
 
-    ret = isync_advertise(0xcafe, 0xbabe);
+    ret = isync_advertise(0xcafedead, 0xbabe);
     ret_chk(ret != SUCCESS, "isync_advertise failed");
 
     ret = isync_scan(ble_scan_notify); // this is a blocking call

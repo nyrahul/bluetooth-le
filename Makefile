@@ -1,4 +1,4 @@
-ifeq ($(TARGET),android)
+ifeq ($(PLATFORM),android)
 CC := gcc
 else
 CC := gcc

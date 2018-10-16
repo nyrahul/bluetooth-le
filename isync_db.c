@@ -47,6 +47,33 @@ ret_fail:
     return NULL;
 }
 
+static inline int get_rec_idx(db_info_t *db, void *rec)
+{
+    return ((uint8_t *)rec - db->blk) / sizeof(db->recsz);
+}
+
+static inline int is_rec_inuse(db_info_t *db, void *rec, int *iptr, int *offptr)
+{
+    int recnum, i, off;
+
+    recnum = get_rec_idx(db, rec);
+    ret_chk(recnum < 0, "invalid rec ptr");
+
+    i   = recnum / sizeof(uint32_t);
+    off = recnum % sizeof(uint32_t);
+    if (iptr)
+        *iptr = i;
+    if (offptr)
+        *offptr = i;
+    if (db->usedmap[i] & (1 << off))
+    {
+        return 1;
+    }
+    return 0;
+ret_fail:
+    return FAILURE;
+}
+
 static inline void *get_rec(db_info_t *db, int idx)
 {
     return db->blk + (idx * db->recsz);
@@ -107,24 +134,56 @@ void *db_alloc(void *dbptr)
     return NULL;
 }
 
+void *db_get_next(void *dbptr, int *state)
+{
+    db_info_t *db = dbptr;
+    void *rec;
+    int idx = 0, ret;
+
+    if (*state >= 0)
+    {
+        (*state)++;
+    }
+    else
+    {
+        *state = 0;
+    }
+
+    for (idx = *state; idx < db->maxcnt; idx++)
+    {
+        rec = get_rec(db, idx);
+        ret = is_rec_inuse(db, rec, NULL, NULL);
+        if (ret < 0)
+        {
+            ERROR("problem with getting rec");
+            return NULL;
+        }
+        if (ret)
+        {
+            *state = idx;
+            return rec;
+        }
+    }
+    return NULL;
+}
+
 void db_free(void *dbptr, void *ptr)
 {
     db_info_t *db = dbptr;
-    int recnum, i, off;
+    int i, off, ret;
 
-    recnum = ((uint8_t *)ptr) - db->blk;
-    i      = recnum / sizeof(uint32_t);
-    off    = recnum % sizeof(uint32_t);
-    if (!(db->usedmap[i] & (1 << off)))
-    {
-        ERROR("STRANGE THE RECORD SHOWS UNUSED");
-        return;
-    }
-    db->usedmap[i] |= ~(1 << off);
+    ret_chk(!dbptr || !ptr, "Sanity chk failed");
+
+    ret = is_rec_inuse(db, ptr, &i, &off);
+    ret_chk(ret <= 0, "STRANGE THE REC SHOWS UNUSED")
+
+        db->usedmap[i] |= ~(1 << off);
     db->usecnt--;
     if (db->usecnt < 0)
     {
         ERROR("SOMETHING IS TERRIBLY WRONG");
         db->usecnt = 0;
     }
+ret_fail:
+    return;
 }

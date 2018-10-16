@@ -15,3 +15,11 @@ int epoll_add_fd(fdinfo_t *fi);
 void *epoll_thread(void *);
 void epoll_deinit(void);
 int epoll_init(void);
+
+static inline int get_timediff(struct timeval *etv, struct timeval *stv)
+{
+    int ms;
+    ms = (etv->tv_sec - stv->tv_sec) * 1000;
+    ms += (etv->tv_usec - stv->tv_usec) / 1000;
+    return ms;
+}
