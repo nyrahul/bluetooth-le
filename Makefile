@@ -11,7 +11,7 @@ OBJS := $(patsubst %.c,$(BIN)/%.o,$(SRCS))
 BT_SRCS := $(wildcard bt/*.c)
 OBJS += $(patsubst %.c,$(BIN)/%.o,$(BT_SRCS))
 TARGET := $(BIN)/libhidevice.so
-COMMON_HDR := isync.h epoll_util.h isync_appexp.h isync_pal.h
+COMMON_HDR := isync.h epoll_util.h isync_appexp.h isync_pal.h log.h
 CFLAGS := -Wall -g -DUSE_RFCOMM=7 -fPIC -I.
 LDFLAGS := -fPIC
 #LDFLAGS := -lbluetooth -lpthread

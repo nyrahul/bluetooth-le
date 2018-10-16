@@ -12,6 +12,8 @@
 #include "isync.h"
 #include "isync_pal.h"
 
+static int module_id = ISYNC_BLE;
+
 #define HCI_STATE_NONE 0
 #define HCI_STATE_OPEN 2
 #define HCI_STATE_SCANNING 3
@@ -177,13 +179,13 @@ void print_hex(const char *str, uint8_t *data, size_t data_len)
 
 int isync_handle_devauth(uint8_t *data, size_t data_len)
 {
-    hdr_dev_auth_t *devauth = (hdr_dev_auth_t *)data;
+    // hdr_dev_auth_t *devauth = (hdr_dev_auth_t *)data;
     if (data_len < sizeof(hdr_dev_auth_t))
     {
         ERROR("devauth data not enough");
         return FAILURE;
     }
-    INFO("DEVAUTH RID=%x", devauth->rid);
+    // INFO("DEVAUTH RID=%x", devauth->rid);
     return sizeof(hdr_dev_auth_t);
 }
 
@@ -230,8 +232,7 @@ void process_data(
 
         ba2str(&info->bdaddr, sin->addr);
 
-        INFO("addr=%s name=%s", sin->addr, sin->name);
-        g_scan_notify_cb(sin);
+        // g_scan_notify_cb(sin);
     }
     else if (data[0] == EIR_FLAGS)
     {
@@ -249,16 +250,18 @@ void process_data(
 
         i = 1;
         GETB(&company_id, &data[i], 2, i);
+        ba2str(&info->bdaddr, sin->addr);
 
         if (COMPANY_ID_HUAWEI == company_id)
         {
             uint8_t type;
 
+            /*
             INFO("Manufacture specific type: len=%zu Manufacture:%04X",
                 data_len, company_id);
+            */
 
             GETB(&type, &data[i], 1, i);
-            INFO("type:%02X", type);
 
 #if 0
             print_hex("DATA", data + i, data_len - i);
@@ -354,6 +357,7 @@ void *scan_thread(void *arg)
     {
         int len = 0;
         unsigned char buf[HCI_MAX_EVENT_SIZE];
+        memset(&sin, 0, sizeof(sin));
         while (
             (len = read(current_hci_state.device_handle, buf, sizeof(buf))) < 0)
         {
@@ -371,7 +375,6 @@ void *scan_thread(void *arg)
 
             error = TRUE;
         }
-        memset(&sin, 0, sizeof(sin));
 
         if (!done && !error)
         {

@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <sys/time.h>
 
+#include "log.h"
+
 #define FAILURE -1
 #define SUCCESS 0
 
@@ -34,20 +36,6 @@ typedef struct _isync_dev_
 #define GETB(DST, SRC, NUM, OFFSET)                                            \
     memcpy(DST, SRC, NUM);                                                     \
     (OFFSET) += (NUM);
-
-#define PRN(STR, ...)                                                          \
-    {                                                                          \
-        struct timeval tv;                                                     \
-        gettimeofday(&tv, NULL);                                               \
-        printf("%-5s %5ld:%-4ld", STR, tv.tv_sec % 100000, tv.tv_usec / 1000); \
-        printf(__VA_ARGS__);                                                   \
-        printf("\n");                                                          \
-        fflush(stdout);                                                        \
-    }
-
-#define ERROR(...) PRN("ERROR", __VA_ARGS__)
-
-#define INFO(...) PRN("INFO", __VA_ARGS__)
 
 #define TRUE 1
 #define FALSE 0

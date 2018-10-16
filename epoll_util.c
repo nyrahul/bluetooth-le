@@ -5,6 +5,8 @@
 #include "epoll_util.h"
 #include "isync.h"
 
+static int module_id = ISYNC_COMMON;
+
 int g_epollfd = -1;
 
 int epoll_add_fd(fdinfo_t *fi)

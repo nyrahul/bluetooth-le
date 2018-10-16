@@ -1,8 +1,8 @@
 #pragma once
 
 void *ble_transport_start_cli(const char *addr);
-int ble_transport_init(void);
-void ble_transport_cleanup(void);
+int  isync_transport_init(void);
+void isync_transport_cleanup(void);
 
 // L2cap helper APIs
 int l2cap_start_cli(const char *peeraddr);

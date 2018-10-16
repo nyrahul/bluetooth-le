@@ -5,6 +5,10 @@
 #include "epoll_util.h"
 #include "isync_transport.h"
 
+static int module_id = ISYNC_TRANSPORT;
+
+#if 0
+
 typedef struct _sess_
 {
     fdinfo_t fi;
@@ -93,9 +97,9 @@ int error_handler(fdinfo_t *fi)
     return SUCCESS;
 }
 
-#define SSN_IS_SERVER (1 << 0)
-#define SSN_IS_L2CAP (1 << 1)
-#define SSN_IS_RFCOMM (1 << 2)
+#    define SSN_IS_SERVER (1 << 0)
+#    define SSN_IS_L2CAP (1 << 1)
+#    define SSN_IS_RFCOMM (1 << 2)
 
 cb_fdinfo_t get_accept_handler(int flags)
 {
@@ -140,19 +144,19 @@ ret_fail:
     return NULL;
 }
 
-#if USE_RFCOMM
-#    define FLAGS (SSN_IS_SERVER | SSN_IS_RFCOMM)
-#    define srv_port USE_RFCOMM
-#    define srv_ble_xport rfcomm_start_server
-#    define cli_ble_xport rfcomm_start_cli
-#    define cli_close rfcomm_close
-#else // L2CAP
-#    define FLAGS (SSN_IS_SERVER | SSN_IS_L2CAP)
-#    define srv_port ISYNC_L2CAP_PSM
-#    define srv_ble_xport l2cap_start_server
-#    define cli_ble_xport l2cap_start_cli
-#    define cli_close l2cap_close
-#endif
+#    if USE_RFCOMM
+#        define FLAGS (SSN_IS_SERVER | SSN_IS_RFCOMM)
+#        define srv_port USE_RFCOMM
+#        define srv_ble_xport rfcomm_start_server
+#        define cli_ble_xport rfcomm_start_cli
+#        define cli_close rfcomm_close
+#    else // L2CAP
+#        define FLAGS (SSN_IS_SERVER | SSN_IS_L2CAP)
+#        define srv_port ISYNC_L2CAP_PSM
+#        define srv_ble_xport l2cap_start_server
+#        define cli_ble_xport l2cap_start_cli
+#        define cli_close l2cap_close
+#    endif
 
 void *ble_transport_start_cli(const char *peeraddr)
 {
@@ -174,11 +178,6 @@ void *ble_transport_start_cli(const char *peeraddr)
     }
 
     return ssn;
-}
-
-void ssn_releaseall(void)
-{
-    // TODO release all sessions
 }
 
 int ble_transport_start_ssn(void)
@@ -203,26 +202,23 @@ int ble_transport_start_ssn(void)
 
     return SUCCESS;
 }
+#endif
 
-int ble_transport_init(void)
+void ssn_releaseall(void)
 {
-    int ret;
+    // TODO release all sessions
+}
 
-    ret = epoll_init();
-    ret_chk(ret != SUCCESS, "epoll_init failed");
-
+int isync_transport_init(void)
+{
+#if 0
+    int ret = SUCCESS;
     ret = ble_transport_start_ssn();
     ret_chk(ret != SUCCESS, "epoll_init failed");
+#endif
 
-    INFO("ble transport inited");
+    INFO("isync transport inited");
     return SUCCESS;
-ret_fail:
-    epoll_deinit();
-    return FAILURE;
 }
 
-void ble_transport_cleanup(void)
-{
-    epoll_deinit();
-    ssn_releaseall();
-}
+void isync_transport_cleanup(void) { ssn_releaseall(); }

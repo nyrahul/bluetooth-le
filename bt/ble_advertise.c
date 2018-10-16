@@ -15,6 +15,8 @@
 #define EIR_NAME_COMPLETE 0x09
 #define EIR_MANUFACTURE_SPECIFIC 0xFF
 
+static int module_id = ISYNC_BLE;
+
 int device_handle;
 
 unsigned int *uuid_str_to_data(char *uuid)

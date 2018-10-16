@@ -3,6 +3,8 @@
 #include "isync_service.h"
 #include "isync_db.h"
 
+static int module_id = ISYNC_SERVICE;
+
 typedef struct _sevice_info_
 {
     int id;

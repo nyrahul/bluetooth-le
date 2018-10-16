@@ -1,9 +1,15 @@
+#define _ISYNC_COMMON_
+
 #include "isync.h"
 #include "isync_pal.h"
 #include "isync_transport.h"
 #include "isync_service.h"
 #include "isync_device.h"
 #include "isync_appexp.h"
+#include "timer_util.h"
+#include "epoll_util.h"
+
+static int module_id = ISYNC_COMMON;
 
 typedef struct _isync_config_
 {
@@ -48,20 +54,18 @@ int isync_get_devtype(void) { return DEV->devtype; }
 
 void isync_stop(void)
 {
+    epoll_deinit();
+    isync_device_cleanup();
     isync_serviceall_cleanup();
-    ble_transport_cleanup();
+    isync_transport_cleanup();
     isync_adv_cleanup();
     isync_scan_cleanup();
+    isync_timer_cleanup();
 }
 
 int ble_scan_notify(const scan_info_t *sin)
 {
-#if 0
-    void *ssn;
-    ssn = ble_transport_start_cli(addrstr);
-    INFO("ble_transport_start_cli ssn=%p addr=%s", ssn, addrstr);
-#endif
-    INFO("scan notify: addr=%s, name=%s", sin->addr, sin->name);
+    isync_device_handle_advertisement(sin);
     return SUCCESS;
 }
 
@@ -69,16 +73,25 @@ int isync_init(void)
 {
     int ret;
 
+    ret = epoll_init();
+    ret_chk(ret != SUCCESS, "epoll_init failed");
+
+    ret = isync_timer_init();
+    ret_chk(ret != SUCCESS, "timer_init failed");
+
+    ret = isync_device_init();
+    ret_chk(ret != SUCCESS, "device_init failed");
+
     ret = isync_service_init();
     ret_chk(ret != SUCCESS, "srvice_init failed");
 
-    ret = ble_transport_init();
+    ret = isync_transport_init();
     ret_chk(ret != SUCCESS, "ble_transport_init failed");
 
     ret = isync_advertise(0xcafedead, 0xbabe);
     ret_chk(ret != SUCCESS, "isync_advertise failed");
 
-    ret = isync_scan(ble_scan_notify); // this is a blocking call
+    ret = isync_scan(ble_scan_notify);
     ret_chk(ret != SUCCESS, "isync_scan failed");
 
     return SUCCESS;

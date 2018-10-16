@@ -1,6 +1,8 @@
 #include "isync.h"
 #include "isync_db.h"
 
+static int module_id = ISYNC_DB;
+
 typedef struct _db_info_
 {
     uint8_t *blk;
@@ -49,7 +51,7 @@ ret_fail:
 
 static inline int get_rec_idx(db_info_t *db, void *rec)
 {
-    return ((uint8_t *)rec - db->blk) / sizeof(db->recsz);
+    return ((uint8_t *)rec - db->blk) / db->recsz;
 }
 
 static inline int is_rec_inuse(db_info_t *db, void *rec, int *iptr, int *offptr)
@@ -64,7 +66,7 @@ static inline int is_rec_inuse(db_info_t *db, void *rec, int *iptr, int *offptr)
     if (iptr)
         *iptr = i;
     if (offptr)
-        *offptr = i;
+        *offptr = off;
     if (db->usedmap[i] & (1 << off))
     {
         return 1;
@@ -84,6 +86,9 @@ void *db_search(void *dbptr, void *ptr)
     db_info_t *db = dbptr;
     void *rec;
     int i, j;
+
+    if (!dbptr || !ptr)
+        return NULL;
 
     for (i = 0; i < db->mapsz; i++)
     {
@@ -110,6 +115,9 @@ void *db_alloc(void *dbptr)
     void *rec;
     int i, j;
 
+    if (!dbptr)
+        return NULL;
+
     if (db->usecnt >= db->maxcnt)
     {
         ERROR("DB max limit exceeded maxcnt:%d", db->maxcnt);
@@ -125,6 +133,7 @@ void *db_alloc(void *dbptr)
             if (!(db->usedmap[i] & (1 << j)))
             {
                 rec = get_rec(db, i * sizeof(uint32_t) + j);
+                INFO("ALLOCING i=%d, off=%d", i, j);
                 db->usedmap[i] |= (1 << j);
                 db->usecnt++;
                 return rec;
@@ -140,6 +149,8 @@ void *db_get_next(void *dbptr, int *state)
     void *rec;
     int idx = 0, ret;
 
+    if (!dbptr || !state)
+        return NULL;
     if (*state >= 0)
     {
         (*state)++;
@@ -153,6 +164,7 @@ void *db_get_next(void *dbptr, int *state)
     {
         rec = get_rec(db, idx);
         ret = is_rec_inuse(db, rec, NULL, NULL);
+        // INFO("chking idx=%d ret=%d", idx, ret);
         if (ret < 0)
         {
             ERROR("problem with getting rec");
@@ -175,9 +187,10 @@ void db_free(void *dbptr, void *ptr)
     ret_chk(!dbptr || !ptr, "Sanity chk failed");
 
     ret = is_rec_inuse(db, ptr, &i, &off);
-    ret_chk(ret <= 0, "STRANGE THE REC SHOWS UNUSED")
+    ret_chk(ret <= 0, "STRANGE THE REC SHOWS UNUSED");
 
-        db->usedmap[i] |= ~(1 << off);
+    db->usedmap[i] &= ~(1 << off);
+    // INFO("FREEING i=%d, off=%d", i, off);
     db->usecnt--;
     if (db->usecnt < 0)
     {
