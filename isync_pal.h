@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Advertisement APIs */
 int isync_advertise(const uint32_t rid, const uint16_t devtype);
 void isync_adv_cleanup(void);
@@ -18,3 +22,7 @@ int isync_scan(scan_notify_cb);
 void isync_scan_cleanup(void);
 
 /* Transport */
+
+#ifdef __cplusplus
+}
+#endif

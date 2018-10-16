@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
     Init/Configuration Interfaces
     -----------------------------
@@ -51,3 +55,7 @@ int isync_publish(const int service_id, const uint8_t *buf, const size_t len);
 int isync_subscribe(const int service_id, device_t *dev);
 
 int isync_send(const service_t *service, const uint8_t *buf, const size_t len);
+
+#ifdef __cplusplus
+}
+#endif
