@@ -24,7 +24,6 @@ LDFLAGS := -fPIC
 
 ifeq ($(PLATFORM),android)
 CFLAGS += -fPIE
-LDFLAGS += -pie
 endif
 
 all: $(BIN) $(TARGET)

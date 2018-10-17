@@ -21,8 +21,12 @@ typedef int (*scan_notify_cb)(const scan_info_t *);
 int isync_scan(scan_notify_cb);
 void isync_scan_cleanup(void);
 
+/* Service Info APIs */
+int isync_set_service_info(uint8_t *arr, size_t len);
+
 /* Transport */
 
 #ifdef __cplusplus
 }
 #endif
+

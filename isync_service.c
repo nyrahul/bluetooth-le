@@ -1,5 +1,6 @@
 #include "isync.h"
 #include "isync_appexp.h"
+#include "isync_pal.h"
 #include "isync_service.h"
 #include "isync_db.h"
 
@@ -72,6 +73,11 @@ int isync_start_service(const int id)
 
     memset(si, 0, sizeof(service_info_t));
     si->id = id;
+
+#define MAX_SRV_INFO_LEN    21
+    uint8_t srv_info_arr[MAX_SRV_INFO_LEN] = { 0 };
+    srv_info_arr[0] = (uint8_t) id;
+    isync_set_service_info(srv_info_arr, sizeof(srv_info_arr));
 
     INFO("Started service id=%d\n", id);
     return SUCCESS;

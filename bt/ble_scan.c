@@ -179,10 +179,12 @@ void print_hex(const char *str, uint8_t *data, size_t data_len)
 
 int isync_handle_devauth(uint8_t *data, size_t data_len)
 {
+    return 1;
     // hdr_dev_auth_t *devauth = (hdr_dev_auth_t *)data;
     if (data_len < sizeof(hdr_dev_auth_t))
     {
-        ERROR("devauth data not enough");
+        ERROR("devauth data not enough %zu exp:%zu", data_len,
+                sizeof(hdr_dev_auth_t));
         return FAILURE;
     }
     // INFO("DEVAUTH RID=%x", devauth->rid);
